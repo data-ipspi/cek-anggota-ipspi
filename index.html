@@ -446,9 +446,26 @@ function tampilError(pesan){
 
 function ambil(data,index){
 
-    return data[index]
-    ? data[index].v
-    : '-';
+  if(!data[index]) return '-';
+
+  let value = data[index].v;
+
+  // FORMAT TANGGAL GOOGLE SHEETS
+  if(typeof value === 'string' && value.includes('Date(')){
+
+      const angka = value.match(/\d+/g);
+
+      if(angka){
+
+          const tahun = angka[0];
+          const bulan = parseInt(angka[1]) + 1;
+          const hari = angka[2];
+
+          value = `${hari}/${bulan}/${tahun}`;
+      }
+  }
+
+  return value;
 
 }
 
