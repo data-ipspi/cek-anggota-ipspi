@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>IPSPI - Cek Status Anggota</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    background:linear-gradient(135deg,#021b4f,#0d4e8c,#11998e,#38ef7d);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:850px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(15px);
+    border-radius:30px;
+    border:1px solid rgba(255,255,255,0.15);
+    padding:40px;
+    color:white;
+    box-shadow:0 10px 40px rgba(0,0,0,0.3);
+}
+
+.logo{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.logo img{
+    width:240px;
+}
+
+h1{
+    text-align:center;
+    font-size:42px;
+    margin-bottom:15px;
+    font-weight:700;
+}
+
+.subtitle{
+    text-align:center;
+    color:#dbeafe;
+    margin-bottom:35px;
+    line-height:1.7;
+    font-size:16px;
+}
+
+.search-box{
+    display:flex;
+    gap:15px;
+    margin-bottom:30px;
+}
+
+.search-box input{
+    flex:1;
+    padding:20px;
+    border:none;
+    border-radius:18px;
+    background:rgba(255,255,255,0.1);
+    color:white;
+    font-size:18px;
+    outline:none;
+    border:1px solid rgba(255,255,255,0.1);
+}
+
+.search-box input::placeholder{
+    color:#cbd5e1;
+}
+
+.search-box button{
+    padding:20px 35px;
+    border:none;
+    border-radius:18px;
+    background:linear-gradient(135deg,#22c55e,#2563eb);
+    color:white;
+    font-size:18px;
+    font-weight:700;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.search-box button:hover{
+    transform:translateY(-2px);
+}
+
+.result{
+    display:none;
+    margin-top:20px;
+}
+
+.card{
+    background:rgba(255,255,255,0.08);
+    border-radius:25px;
+    padding:30px;
+    border:1px solid rgba(255,255,255,0.08);
+}
+
+.success{
+    border-left:5px solid #22c55e;
+}
+
+.error{
+    border-left:5px solid #ef4444;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-top:20px;
+}
+
+.item{
+    background:rgba(255,255,255,0.05);
+    padding:18px;
+    border-radius:18px;
+}
+
+.label{
+    font-size:12px;
+    color:#bfdbfe;
+    margin-bottom:8px;
+    text-transform:uppercase;
+}
+
+.value{
+    font-size:16px;
+    font-weight:600;
+    line-height:1.5;
+    word-break:break-word;
+}
+
+.badge{
+    display:inline-block;
+    padding:8px 18px;
+    border-radius:50px;
+    background:#22c55e;
+    color:white;
+    font-size:13px;
+    font-weight:700;
+}
+
+.loading{
+    display:none;
+    text-align:center;
+}
+
+.spinner{
+    width:45px;
+    height:45px;
+    border:4px solid rgba(255,255,255,0.15);
+    border-top:4px solid #38ef7d;
+    border-radius:50%;
+    margin:auto;
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.footer{
+    text-align:center;
+    margin-top:35px;
+    color:#dbeafe;
+    font-size:13px;
+}
+
+@media(max-width:700px){
+
+    h1{
+        font-size:30px;
+    }
+
+    .search-box{
+        flex-direction:column;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .container{
+        padding:25px;
+    }
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo">
+<img src="IPSPI-removebg-preview(2).png">
+</div>
+
+<h1>Status Keanggotaan IPSPI</h1>
+
+<div class="subtitle">
+Sistem Verifikasi Anggota Independen Pekerja Sosial Profesional Indonesia<br>
+Login menggunakan Nomor Induk Kependudukan (NIK)
+</div>
+
+<div class="search-box">
+<input type="text" id="nik" placeholder="Masukkan NIK">
+<button onclick="cekData()">Cek Status</button>
+</div>
+
+<div class="loading" id="loading">
+<div class="spinner"></div>
+<p style="margin-top:15px">Memverifikasi data anggota...</p>
+</div>
+
+<div class="result" id="result"></div>
+
+<div class="footer">
+© IPSPI — Independen Pekerja Sosial Profesional Indonesia
+</div>
+
+</div>
+
+<script>
+
+// ==========================
+// KONFIGURASI SPREADSHEET
+// ==========================
+
+const sheetID = '1mFS3kKsEMeE8VBT_K00-_dz_wUHC9EfaH3htL_fom7s';
+
+const sheetName = 'DATA DARI DATABASE';
+
+// ==========================
+// CEK DATA
+// ==========================
+
+async function cekData(){
+
+    const nik = document.getElementById('nik').value.trim();
+
+    const loading = document.getElementById('loading');
+
+    const result = document.getElementById('result');
+
+    result.style.display = 'none';
+
+    if(!nik){
+
+        tampilError('Silakan masukkan NIK.');
+
+        return;
+    }
+
+    loading.style.display = 'block';
+
+    try{
+
+        const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+
+        const response = await fetch(url);
+
+        const text = await response.text();
+
+        const json = JSON.parse(text.substr(47).slice(0,-2));
+
+        const rows = json.table.rows;
+
+        let ditemukan = null;
+
+        rows.forEach(row => {
+
+            const data = row.c;
+
+            const nikSpreadsheet = data[37]
+            ? String(data[37].v).replace(/'/g,'').trim()
+            : '';
+
+            if(nikSpreadsheet === nik){
+
+                ditemukan = data;
+            }
+
+        });
+
+        loading.style.display = 'none';
+
+        if(ditemukan){
+
+            tampilData(ditemukan);
+
+        }else{
+
+            tampilError('Data anggota tidak ditemukan. Pastikan NIK benar.');
+
+        }
+
+    }catch(error){
+
+        loading.style.display = 'none';
+
+        tampilError('Spreadsheet belum dipublish atau terjadi kesalahan.');
+
+        console.log(error);
+
+    }
+
+}
+
+// ==========================
+// TAMPILKAN DATA
+// ==========================
+
+function tampilData(data){
+
+    const result = document.getElementById('result');
+
+    result.innerHTML = `
+
+    <div class="card success">
+
+    <h2 style="text-align:center;font-size:28px">
+    ✅ Data Anggota Ditemukan
+    </h2>
+
+    <div class="grid">
+
+    <div class="item">
+    <div class="label">Nama Lengkap</div>
+    <div class="value">${ambil(data,1)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Nomor Anggota</div>
+    <div class="value">${ambil(data,2)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Jenis Kelamin</div>
+    <div class="value">${ambil(data,3)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Tempat Bekerja</div>
+    <div class="value">${ambil(data,4)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Provinsi</div>
+    <div class="value">${ambil(data,7)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Kabupaten/Kota</div>
+    <div class="value">${ambil(data,8)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Status Pekerjaan</div>
+    <div class="value">${ambil(data,29)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Status Anggota</div>
+    <div class="value">
+    <span class="badge">${ambil(data,42)}</span>
+    </div>
+    </div>
+
+    <div class="item">
+    <div class="label">Nomor STR Pekerja Sosial</div>
+    <div class="value">${ambil(data,14)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Nomor SIP Pekerja Sosial</div>
+    <div class="value">${ambil(data,15)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">No Sertifikat Peksos</div>
+    <div class="value">${ambil(data,12)}</div>
+    </div>
+
+    <div class="item">
+    <div class="label">Akhir Masa Berlaku</div>
+    <div class="value">${ambil(data,41)}</div>
+    </div>
+
+    </div>
+
+    </div>
+
+    `;
+
+    result.style.display = 'block';
+
+}
+
+// ==========================
+// ERROR
+// ==========================
+
+function tampilError(pesan){
+
+    const result = document.getElementById('result');
+
+    result.innerHTML = `
+
+    <div class="card error">
+
+    <h2 style="text-align:center">
+    ❌ ${pesan}
+    </h2>
+
+    </div>
+
+    `;
+
+    result.style.display = 'block';
+
+}
+
+// ==========================
+// AMBIL DATA
+// ==========================
+
+function ambil(data,index){
+
+    return data[index]
+    ? data[index].v
+    : '-';
+
+}
+
+</script>
+
+</body>
+</html>
